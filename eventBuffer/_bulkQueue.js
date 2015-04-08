@@ -19,7 +19,16 @@ module.exports = function (eventBuffer) {
       event = event.body;
 
       if (checkedIndice[event.index] !== true) {
-        deps.push(createIndex(event.index));
+        if (argv.disableall && argv.docvalues) {
+          deps.push(createIndex(event.index, true, true));
+        } else if (argv.disableall) {
+          deps.push(createIndex(event.index, true, false));
+        } else if (argv.docvalues) {
+          deps.push(createIndex(event.index, false, true));
+        } else {
+          deps.push(createIndex(event.index, false, false));
+        }
+
         checkedIndice[event.index] = true;
       }
 

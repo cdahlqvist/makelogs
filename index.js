@@ -14,7 +14,6 @@ var argv = require('./argv');
 var total = argv.total;
 var startingMoment = argv.start;
 var endingMoment = argv.end;
-var indexPrefix  = argv.indexPrefix;
 
 client.usable
 .then(function () {
@@ -23,9 +22,17 @@ client.usable
 .then(function () {
   if (argv.dry) return;
   if (argv.reset) {
-    argv.log('clearing existing '+indexPrefix+'* indices');
+    argv.log('clearing existing indices');
+
+    if (argv.singleindex) {
+      var index_pattern = argv.index;
+    }
+    else {
+      var index_pattern = argv.index + "*";
+    }
+
     return client.indices.delete({
-      index: indexPrefix+'*'
+      index: index_pattern
     });
   }
 })
@@ -50,8 +57,8 @@ client.usable
   return (function crunch() {
     argv.log('creating no more than', i, 'events');
 
-    for (; i >= 0; i--) {
-      var event = randomEvent(indexPrefix);
+    for (; i > 0; i--) {
+      var event = randomEvent(argv.index, argv.singleindex);
 
       if (argv.dry) {
         console.log('\n\n', event);
@@ -76,6 +83,4 @@ client.usable
   if (argv.dry) return;
   eventBuffer.push(false);
 })
-.catch(function (err) {
-  console.error(err.stack);
-});
+.catch(console.error.bind(console));

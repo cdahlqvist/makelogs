@@ -1,34 +1,8 @@
 var argv = require('../argv');
 var client = require('../_client');
 
-module.exports = function createIndex(indexName) {
+module.exports = function createIndex(indexName, disableall, docvalues) {
   argv.log('ensuring index "%s" exists', indexName);
-
-  var dynamicTemplates = [ {
-    string_fields : {
-      mapping : {
-        type : 'multi_field',
-        doc_values: true,
-        fields : {
-          hash: {
-            type: 'murmur3'
-          },
-          '{name}' : {
-            index : 'analyzed',
-            omit_norms : true,
-            type : 'string',
-          },
-          raw : {
-            index : 'not_analyzed',
-            type : 'string',
-            doc_values: true,
-          }
-        }
-      },
-      match_mapping_type : 'string',
-      match : '*'
-    }
-  }];
 
   var indexBody = {
     settings: {
@@ -48,7 +22,6 @@ module.exports = function createIndex(indexName) {
     },
     mappings: {
       _default_: {
-        dynamic_templates : dynamicTemplates,
         _timestamp: {
           enabled: true,
           store: 'yes'
@@ -62,6 +35,32 @@ module.exports = function createIndex(indexName) {
             index: 'not_analyzed',
             include_in_all: false
           },
+          agent: {
+            type: 'multi_field',
+            fields: {
+              agent: {
+                type: 'string',
+                index: 'analyzed'
+              },
+              raw: {
+                type: 'string',
+                index: 'not_analyzed'
+              }
+            }
+          },
+          request: {
+            type: 'multi_field',
+            fields: {
+              request: {
+                type: 'string',
+                index: 'analyzed'
+              },
+              raw: {
+                type: 'string',
+                index: 'not_analyzed'
+              }
+            }
+          },
           clientip: {
             type: 'ip'
           },
@@ -71,7 +70,14 @@ module.exports = function createIndex(indexName) {
           memory: {
             type: 'double'
           },
+          bytes: {
+            type: 'long'
+          },
           referer: {
+            type: 'string',
+            index: 'not_analyzed'
+          },
+          response: {
             type: 'string',
             index: 'not_analyzed'
           },
@@ -120,6 +126,28 @@ module.exports = function createIndex(indexName) {
       }
     }
   };
+
+  if (disableall) {
+    indexBody["mappings"]["_default_"]["_all"] = { "enabled" : false }
+  }
+
+  if (docvalues) {
+    indexBody["mappings"]["_default_"]["properties"]["agent"]["fields"]["raw"]["doc_values"] = true;
+    indexBody["mappings"]["_default_"]["properties"]["request"]["fields"]["raw"]["doc_values"] = true;
+    indexBody["mappings"]["_default_"]["properties"]["clientip"]["doc_values"] = true;
+    indexBody["mappings"]["_default_"]["properties"]["ip"]["doc_values"] = true;
+    indexBody["mappings"]["_default_"]["properties"]["memory"]["doc_values"] = true;
+    indexBody["mappings"]["_default_"]["properties"]["referer"]["doc_values"] = true;
+    indexBody["mappings"]["_default_"]["properties"]["response"]["doc_values"] = true;
+    indexBody["mappings"]["_default_"]["properties"]["bytes"]["doc_values"] = true;
+    indexBody["mappings"]["_default_"]["properties"]["@timestamp"]["doc_values"] = true;
+    indexBody["mappings"]["_default_"]["properties"]["geo"]["properties"]["srcdest"]["doc_values"] = true;
+    indexBody["mappings"]["_default_"]["properties"]["geo"]["properties"]["dest"]["doc_values"] = true;
+    indexBody["mappings"]["_default_"]["properties"]["geo"]["properties"]["src"]["doc_values"] = true;
+    indexBody["mappings"]["_default_"]["properties"]["geo"]["properties"]["coordinates"]["doc_values"] = true
+  }
+
+  argv.log('Mapping to be used:', JSON.stringify(indexBody));
 
   return client.usable
   .then(function () {

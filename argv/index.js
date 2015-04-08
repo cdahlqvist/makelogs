@@ -1,9 +1,4 @@
 var _ = require('lodash');
-var join = require('path').join;
-var read = require('fs').readFileSync;
-
-var OMIT_HELP_PATH = join(__dirname, 'omitFormatting.txt');
-
 var optimist = require('optimist')
   .usage('A utility to generate sample log data.\n\nUsage: $0 [options]')
   .options({
@@ -30,10 +25,6 @@ var optimist = require('optimist')
       describe: 'user:password when you want to connect to a secured elasticsearch cluster over basic auth',
       default: null
     },
-    indexPrefix: {
-      describe: 'Name of the prefix of the index',
-      default: 'logstash-'
-    },
     shards: {
       alias: 's',
       describe: 'The number of primary shards',
@@ -48,12 +39,29 @@ var optimist = require('optimist')
       describe: 'Test/Parse your arguments, but don\'t actually do anything',
       default: false
     },
+    singleindex: {
+      describe: 'Use single index instead of time based indices.',
+      type: 'boolean'
+    },
+    index: {
+      alias: 'i',
+      describe: 'Base index name.',
+      default: "logstash-"
+    },
+    docvalues: {
+      describe: 'Use doc_values.',
+      type: 'boolean'
+    },
+    disableall: {
+      describe: 'Disable _all field.',
+      type: 'boolean'
+    },
     help: {
       describe: 'This help message',
       type: 'boolean'
     },
     reset: {
-      describe: 'Clear all logstash-* indices before genrating logs',
+      describe: 'Clear all indices before generating logs',
       type: 'boolean'
     },
     verbose: {
@@ -61,13 +69,8 @@ var optimist = require('optimist')
       type: 'boolean'
     },
     trace: {
-      describe: 'Log every request to elastisearch, including request bodies. BE CAREFULL',
+      describe: 'Log every request to elastisearch, including request bodies. BE CAREFUL',
       type: 'boolean'
-    },
-    omit: {
-      alias: 'o',
-      describe: 'Omit a field from every event. See "formatting an omit path"',
-      type: 'string'
     }
   });
 
@@ -75,8 +78,6 @@ var argv = optimist.argv;
 
 if (argv.help) {
   optimist.showHelp(console.log);
-  console.log(read(OMIT_HELP_PATH, 'utf8'));
-
   process.exit();
 }
 

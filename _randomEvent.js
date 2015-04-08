@@ -1,6 +1,6 @@
 var samples = require('./samples');
 
-module.exports = function RandomEvent(indexPrefix) {
+module.exports = function RandomEvent(BaseIndexName, SingleIndex) {
   var event = {};
 
   // random date, plus less random time
@@ -24,8 +24,13 @@ module.exports = function RandomEvent(indexPrefix) {
   date.setUTCHours(hours, minutes, seconds, ms);
 
   var dateAsIso = date.toISOString();
-  var indexName = indexPrefix +
-    dateAsIso.substr(0, 4) + '.' + dateAsIso.substr(5, 2) + '.' + dateAsIso.substr(8, 2);
+
+  if (SingleIndex) {
+    var indexName = BaseIndexName
+  } else {
+    var indexName = BaseIndexName +
+      dateAsIso.substr(0, 4) + '.' + dateAsIso.substr(5, 2) + '.' + dateAsIso.substr(8, 2);
+  }
 
   event.index = indexName;
   event['@timestamp'] = dateAsIso;
@@ -85,8 +90,6 @@ module.exports = function RandomEvent(indexPrefix) {
     'http://' + samples.referrers() + '/' + samples.tags2() + '/' + samples.astronauts(),
     'www.' + samples.referrers()
   ];
-
-  event.relatedContent = samples.relatedContent();
 
   event.machine = {
     os: samples.randomOs(),
